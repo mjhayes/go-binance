@@ -10,33 +10,34 @@ import (
 
 // Endpoints
 const (
-	baseWsMainURL          = "wss://stream.binance.com:9443/ws"
-	baseWsTestnetURL       = "wss://testnet.binance.vision/ws"
-	baseCombinedMainURL    = "wss://stream.binance.com:9443/stream?streams="
-	baseCombinedTestnetURL = "wss://testnet.binance.vision/stream?streams="
+	baseWsMain    = "wss://stream.binance.com:443"
+	baseWsTestnet = "wss://testnet.binance.vision:443"
 )
 
 var (
 	// WebsocketTimeout is an interval for sending ping/pong messages if WebsocketKeepalive is enabled
 	WebsocketTimeout = time.Second * 60
 	// WebsocketKeepalive enables sending ping/pong messages to check the connection stability
-	WebsocketKeepalive = false
+	WebsocketKeepalive  = false
+	WebsocketMainURL    = baseWsMain
+	WebsocketTestnetURL = baseWsTestnet
 )
+
+func getWsBaseURL() string {
+	if UseTestnet {
+		return WebsocketTestnetURL
+	}
+	return WebsocketMainURL
+}
 
 // getWsEndpoint return the base endpoint of the WS according the UseTestnet flag
 func getWsEndpoint() string {
-	if UseTestnet {
-		return baseWsTestnetURL
-	}
-	return baseWsMainURL
+	return getWsBaseURL() + "/ws"
 }
 
 // getCombinedEndpoint return the base endpoint of the combined stream according the UseTestnet flag
 func getCombinedEndpoint() string {
-	if UseTestnet {
-		return baseCombinedTestnetURL
-	}
-	return baseCombinedMainURL
+	return getWsBaseURL() + "/stream?streams="
 }
 
 // WsPartialDepthEvent define websocket partial depth book event
@@ -797,7 +798,7 @@ func WsBookTickerServe(symbol string, handler WsBookTickerHandler, errHandler Er
 
 // WsCombinedBookTickerServe is similar to WsBookTickerServe, but it is for multiple symbols
 func WsCombinedBookTickerServe(symbols []string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	endpoint := baseCombinedMainURL
+	endpoint := getCombinedEndpoint()
 	for _, s := range symbols {
 		endpoint += fmt.Sprintf("%s@bookTicker", strings.ToLower(s)) + "/"
 	}
